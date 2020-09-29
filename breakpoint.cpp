@@ -7,6 +7,7 @@
 #include <iostream>
 #include <algorithm>
 
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <tlhelp32.h>
 
@@ -161,7 +162,7 @@ namespace HWBreakpoint
 
     void BuildTrampoline()
     {
-        ULONG_PTR* rtlThreadStartAddress = (ULONG_PTR*)GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlUserThreadStart");
+        ULONG_PTR* rtlThreadStartAddress = (ULONG_PTR*)GetProcAddress(GetModuleHandle(L"ntdll.dll"), "RtlUserThreadStart");
 
         SYSTEM_INFO si;
         GetSystemInfo(&si);
@@ -347,13 +348,14 @@ namespace HWBreakpoint
         //		the right solution is to do it from another process which first suspend the target process, inject the changes to his memory, and resume it.
 
         DWORD oldProtect;
-        ULONG_PTR* rtlThreadStartAddress = (ULONG_PTR*)GetProcAddress(GetModuleHandle("ntdll.dll"), "RtlUserThreadStart");
+        ULONG_PTR* rtlThreadStartAddress = (ULONG_PTR*)GetProcAddress(GetModuleHandle(L"ntdll.dll"), "RtlUserThreadStart");
 
         if (set)
         {
             VirtualProtect(rtlThreadStartAddress, 5, PAGE_EXECUTE_READWRITE, &oldProtect);
             ((unsigned char*)rtlThreadStartAddress)[0] = 0xE9;
-            *(DWORD*)&(((unsigned char*)rtlThreadStartAddress)[1]) = (DWORD)_trampoline - (DWORD)rtlThreadStartAddress - 5;
+            DWORD* temp = (DWORD*)&(((unsigned char*)rtlThreadStartAddress)[1]);
+            //*(DWORD*)&(((unsigned char*)rtlThreadStartAddress)[1]) = (DWORD)_trampoline - (DWORD)rtlThreadStartAddress - 5;
 
             VirtualProtect(rtlThreadStartAddress, 5, oldProtect, &oldProtect);
         }
